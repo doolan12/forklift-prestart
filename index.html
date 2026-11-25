@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Forklift Pre-Start Check</title>
+<style>
+  :root{--ok:#0a7a3d;--bad:#c62828;--ink:#14181f;--mute:#5b6572;--line:#d5dae1;--bg:#f3f5f8;--card:#fff;--amber:#f5b800}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--ink);font-size:17px;line-height:1.35}
+  header{background:var(--amber);padding:16px 16px 14px;border-bottom:4px solid #14181f}
+  header h1{margin:0;font-size:22px;letter-spacing:.2px}
+  header p{margin:4px 0 0;font-size:14px;font-weight:600}
+  main{max-width:640px;margin:0 auto;padding:12px 12px 120px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin:12px 0}
+  label.f{display:block;font-size:13px;font-weight:700;color:var(--mute);text-transform:uppercase;margin:10px 0 4px}
+  label.f:first-child{margin-top:0}
+  input,textarea{width:100%;font:inherit;padding:12px;border:1.5px solid var(--line);border-radius:8px;background:#fff}
+  textarea{min-height:80px}
+  h2{font-size:16px;margin:22px 4px 6px;text-transform:uppercase;letter-spacing:.5px}
+  h2 small{display:block;text-transform:none;font-weight:500;color:var(--mute);letter-spacing:0;font-size:13px}
+  .models{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .models button{font:inherit;font-weight:800;padding:16px 6px;border-radius:10px;border:2px solid var(--line);background:#fff;color:var(--ink)}
+  .models button.on{background:#14181f;border-color:#14181f;color:var(--amber)}
+  .models button small{display:block;font-weight:500;font-size:12px;opacity:.8}
+  .allok{width:100%;font:inherit;font-weight:800;padding:14px;margin-bottom:6px;border-radius:10px;border:2px solid var(--ok);background:#e8f5ee;color:var(--ok)}
+  .allhint{font-size:13px;color:var(--mute);margin:0 0 6px;text-align:center}
+  .item{padding:12px 0;border-top:1px solid var(--line)}
+  .item b{display:block}
+  .item span.d{display:block;color:var(--mute);font-size:14px;margin-top:2px}
+  .btns{display:flex;gap:8px;margin-top:8px}
+  .btns button{flex:1;font:inherit;font-weight:700;padding:13px 6px;border-radius:10px;border:2px solid var(--line);background:#fff;color:var(--ink)}
+  .btns button.ok.on{background:var(--ok);border-color:var(--ok);color:#fff}
+  .btns button.bad.on{background:var(--bad);border-color:var(--bad);color:#fff}
+  .btns button.na.on{background:#5b6572;border-color:#5b6572;color:#fff}
+  .bar{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:2px solid #14181f;padding:10px 14px;display:flex;align-items:center;gap:12px;z-index:5}
+  .bar .prog{flex:1;font-size:14px;font-weight:600}
+  .bar .meter{height:8px;background:var(--line);border-radius:4px;margin-top:5px;overflow:hidden}
+  .bar .meter i{display:block;height:100%;width:0;background:var(--ok);transition:width .2s}
+  .bar button{font:inherit;font-weight:800;padding:13px 18px;border:0;border-radius:10px;background:#14181f;color:#fff}
+  #result{display:none}
+  .banner{border-radius:12px;padding:16px;font-weight:800;font-size:19px;color:#fff;margin-bottom:12px}
+  .banner.pass{background:var(--ok)} .banner.fail{background:var(--bad)}
+  .banner small{display:block;font-weight:500;font-size:15px;margin-top:6px}
+  pre{white-space:pre-wrap;background:#f3f5f8;border:1px solid var(--line);border-radius:8px;padding:12px;font-size:14px}
+  .row{display:flex;gap:8px;margin-top:10px}
+  .row button{flex:1;font:inherit;font-weight:700;padding:13px;border-radius:10px;border:2px solid #14181f;background:#fff}
+  .note{font-size:13px;color:var(--mute);margin-top:10px}
+</style>
+</head>
+<body>
+<header>
+  <h1>Forklift Pre-Start Check</h1>
+  <p>Toyota electric forklifts</p>
+</header>
+<main>
+  <div id="form">
+    <div class="card">
+      <label class="f">Forklift model</label>
+      <div class="models" id="models"></div>
+      <div class="note" id="modelhint">Pick the model first. The checks below change to suit it.</div>
+      <label class="f" for="fl">Forklift no. (optional)</label>
+      <input id="fl" placeholder="e.g. 1" autocomplete="off">
+      <label class="f" for="op">Operator name</label>
+      <input id="op" placeholder="Your name" autocomplete="name">
+      <label class="f" for="hrs">Hour meter reading</label>
+      <input id="hrs" inputmode="decimal" placeholder="Hours">
+      <div class="note" id="when"></div>
+    </div>
+
+    <h2>1. Walk-around <small>Key out, forklift off, forks lowered</small></h2>
+    <div class="card" id="s1"></div>
+
+    <h2>2. Battery &amp; power <small>Electric truck checks</small></h2>
+    <div class="card" id="s2"></div>
+
+    <h2>3. In the seat <small>Key on, seatbelt on, in a clear area</small></h2>
+    <div class="card" id="s3"></div>
+
+    <h2>4. Test drive &amp; lift <small>Slow and in a clear area, no load</small></h2>
+    <div class="card" id="s4"></div>
+
+    <div class="card">
+      <label class="f" for="notes">Defects / comments</label>
+      <textarea id="notes" placeholder="Describe anything marked Defect"></textarea>
+    </div>
+  </div>
+
+
+  <div id="result">
+    <div class="banner" id="banner"></div>
+    <div class="card">
+      <div class="note" style="font-weight:700;color:#14181f;margin:0 0 10px">Nothing is stored online. This check only exists on your phone until you save or send it.</div>
+      <button id="savepdf" class="allok">Save as PDF</button>
+      <button id="sharepdf" class="allok" style="display:none">Share or email the PDF</button>
+      <pre id="report"></pre>
+      <div class="row">
+        <button id="copy">Copy report</button>
+        <button id="back">Back to check</button>
+      </div>
+      <div class="row"><button id="newcheck">Start a new check</button></div>
+      <div class="note" id="copymsg"></div>
+    </div>
+    <div class="note">Send the PDF to your trainer. If a defect was found, tell your trainer straight away.</div>
+  </div>
+</main>
+
+<div class="bar" id="bar">
+  <div class="prog"><span id="count">0 of 0 done</span><div class="meter"><i id="m"></i></div></div>
+  <button id="finish">Finish</button>
+</div>
+
+<script>
+const SECTIONS = {
+ s1: [
+  ["Tyres","No cuts, chunks or missing rubber. Not worn down to the wear line."],
+  ["Wheels and wheel nuts","All nuts present and tight. Rims not damaged."],
+  ["Load wheels and legs","No damage, wear or stuck debris. Legs not damaged.","reach"],
+  ["Forks","No cracks, bends or heavy wear. Same height. Heel not worn thin."],
+  ["Fork locking pins","In place and holding the forks."],
+  ["Carriage and load backrest","No cracks or damage. Backrest secure."],
+  ["Mast and chains","Chains even, oiled, no rust, bent or stiff links. Mast rails not damaged."],
+  ["Hydraulic hoses and cylinders","No leaks, cuts, bulges or rubbing."],
+  ["Overhead guard","No damage, cracks or modification."],
+  ["Capacity plate","Fitted and readable."],
+  ["Floor under the forklift","No oil, water or battery acid leaks."]
+ ],
+ s2: [
+  ["Battery and cables","No damage, no exposed or frayed cables. Battery secure in the truck."],
+  ["Battery plug","Fully connected. Plug and socket not damaged."],
+  ["Battery charge level","Enough charge on the display for the job. Not run flat."],
+  ["Battery water level","Wet-cell batteries only: plates covered. Mark N/A for sealed batteries."],
+  ["Battery hood or door and latch","Closes and latches properly."]
+ ],
+ s3: [
+  ["Seat and seatbelt","Seat secure and adjusted. Seatbelt clicks in, locks and releases.","cb"],
+  ["Operator presence pedal and restraint","Pedal and any restraint work. Truck stops when the pedal is released.","reach"],
+  ["Display and warning lights","No warning lights or fault codes after the key is on."],
+  ["Horn","Works."],
+  ["Lights, beacon and reverse alarm","All fitted ones work."],
+  ["Steering","Smooth, no excess play, no noises."],
+  ["Direction and speed controls","Smooth. Truck will not move when the control is in neutral."],
+  ["Mirrors and visibility","Clean, not blocked, adjusted."],
+  ["Operator area","Clean and dry. Floor, pedals and handles free of oil and rubbish."]
+ ],
+ s4: [
+  ["Service brake","Pulls up smoothly and straight."],
+  ["Parking brake","Holds the truck. Light or warning works."],
+  ["Lift and lower","Smooth, no jerking, no unusual noise."],
+  ["Reach in and out","Carriage extends and retracts smoothly and stops at both ends. No jerking or noise.","reach"],
+  ["Tilt forward and back","Smooth. Holds position."],
+  ["Side-shift and attachments","If fitted: works smoothly. Otherwise N/A."],
+  ["Mast and forks hold position","No drifting down while raised."]
+ ]
+};
+const state = {}; let total = 0; let model = "";
+const $ = id => document.getElementById(id);
+const MODELS = {
+  "7fbe15": ["7FBE15", "cb", "Counterbalance"],
+  "7fbe18": ["7FBE18", "cb", "Counterbalance"],
+  "8fbe18": ["8FBE18", "cb", "Counterbalance"],
+  "6fbre16": ["6FBRE16", "reach", "Reach truck"]
+};
+const allKeys = () => Object.keys(SECTIONS).flatMap(sid => SECTIONS[sid].map((_, i) => sid + "_" + i));
+function isVisible(key){
+  const only = $(key).dataset.only;
+  if(!only) return true;
+  return !!model && MODELS[model][1] === only;
+}
+function applyModel(){
+  allKeys().forEach(k => { $(k).style.display = isVisible(k) ? "" : "none"; });
+  document.querySelectorAll("#models button").forEach(b => b.classList.toggle("on", b.dataset.m === model));
+  $("modelhint").textContent = model ? MODELS[model][2] + " checks showing." : "Pick the model first. The checks below change to suit it.";
+  update();
+}
+function selectModel(m){
+  if(!MODELS[m]) return;
+  model = m; applyModel(); save();
+}
+function buildModels(){
+  Object.entries(MODELS).forEach(([id, [label,, kind]]) => {
+    const b = document.createElement("button");
+    b.dataset.m = id; b.innerHTML = label + "<small>" + kind + "</small>";
+    b.onclick = () => selectModel(id);
+    $("models").appendChild(b);
+  });
+}
+
+function build(){
+  for(const [sid, items] of Object.entries(SECTIONS)){
+    const host = $(sid);
+    const all = document.createElement("div");
+    all.innerHTML = '<button class="allok">All OK in this section</button><p class="allhint">Then tap Defect or N/A on anything that is not OK</p>';
+    all.querySelector("button").onclick = () => {
+      items.forEach((_, i) => { const k = sid + "_" + i; if(isVisible(k) && state[k] !== "bad" && state[k] !== "na") set(k, "ok"); });
+    };
+    host.appendChild(all);
+    items.forEach(([name, desc, only], i) => {
+      const key = sid + "_" + i; total++;
+      const d = document.createElement("div"); d.className = "item"; d.id = key; d.dataset.only = only || "";
+      d.innerHTML = '<b></b><span class="d"></span><div class="btns"><button class="ok">OK</button><button class="bad">Defect</button><button class="na">N/A</button></div>';
+      d.querySelector("b").textContent = name;
+      d.querySelector(".d").textContent = desc;
+      ["ok","bad","na"].forEach(c => { d.querySelector("." + c).onclick = () => set(key, c); });
+      host.appendChild(d);
+    });
+  }
+  update();
+}
+function set(key, v){
+  state[key] = v;
+  const el = $(key);
+  ["ok","bad","na"].forEach(c => el.querySelector("." + c).classList.toggle("on", c === v));
+  save(); update();
+}
+function update(){
+  const vis = allKeys().filter(isVisible);
+  const done = vis.filter(k => k in state).length;
+  $("count").textContent = done + " of " + vis.length + " done";
+  $("m").style.width = (100 * done / vis.length) + "%";
+}
+function save(){
+  try{ sessionStorage.setItem("prestart", JSON.stringify({state, m:model, f:$("fl").value, o:$("op").value, h:$("hrs").value, n:$("notes").value})); }catch(e){}
+}
+function load(){
+  try{
+    const s = JSON.parse(sessionStorage.getItem("prestart")||"null");
+    if(s){
+      if(s.m && MODELS[s.m]) { model = s.m; applyModel(); }
+      $("fl").value = s.f||""; $("op").value = s.o||""; $("hrs").value = s.h||""; $("notes").value = s.n||"";
+      Object.entries(s.state||{}).forEach(([k,v]) => { if($(k)) set(k,v); });
+    }
+  }catch(e){}
+}
+function fromHash(){
+  (location.hash||"").replace(/^#/, "").toLowerCase().split("-").forEach(t => {
+    if(MODELS[t]) selectModel(t);
+    else { const m = t.match(/^fl(\w+)$/); if(m) $("fl").value = m[1]; }
+  });
+}
+function stamp(){
+  $("when").textContent = "Date and time: " + new Date().toLocaleString("en-AU",{dateStyle:"medium",timeStyle:"short"});
+}
+function finish(){
+  if(!model){
+    $("models").scrollIntoView({behavior:"smooth", block:"center"});
+    $("modelhint").textContent = "Pick the forklift model first.";
+    return;
+  }
+  const vis = allKeys().filter(isVisible);
+  const firstMissing = vis.find(k => !(k in state));
+  if(firstMissing){
+    $(firstMissing).scrollIntoView({behavior:"smooth", block:"center"});
+    $("count").textContent = vis.filter(k => !(k in state)).length + " not answered";
+    return;
+  }
+  const defects = [];
+  Object.entries(SECTIONS).forEach(([sid, items]) => items.forEach(([name], i) => { const k = sid+"_"+i; if(isVisible(k) && state[k]==="bad") defects.push(name); }));
+  const fail = defects.length > 0;
+  const b = $("banner"); b.className = "banner " + (fail ? "fail" : "pass");
+  b.innerHTML = fail ? "DEFECTS FOUND &mdash; DO NOT OPERATE<small>Park it, tag it out, take the key out and tell your supervisor.</small>" : "PRE-START CHECK PASSED<small>No defects reported.</small>";
+  const when = new Date().toLocaleString("en-AU",{dateStyle:"medium",timeStyle:"short"});
+  const lines = [
+    "FORKLIFT PRE-START CHECK",
+    "Toyota " + MODELS[model][0] + " (electric " + MODELS[model][2].toLowerCase() + ")",
+    "Forklift no: " + ($("fl").value||"-"),
+    "Operator: " + ($("op").value||"-"),
+    "Hour meter: " + ($("hrs").value||"-"),
+    "Date/time: " + when,
+    "Result: " + (fail ? "DEFECTS FOUND - DO NOT OPERATE" : "PASSED - no defects")
+  ];
+  if(fail) lines.push("Defects: " + defects.join("; "));
+  if($("notes").value.trim()) lines.push("Comments: " + $("notes").value.trim());
+  $("report").textContent = lines.join("\n");
+  lastPdf = makePdf({model, forklift:$("fl").value||"", operator:$("op").value||"", hours:$("hrs").value||"", result: fail ? "defects" : "pass", defects, notes:$("notes").value.trim(), when});
+  $("form").style.display = "none"; $("bar").style.display = "none"; $("result").style.display = "block";
+  window.scrollTo(0,0);
+}
+
+/* ---- PDF made on the phone. Nothing is sent or stored anywhere. ---- */
+const SECTION_TITLES = {s1:"1. Walk-around", s2:"2. Battery and power", s3:"3. In the seat", s4:"4. Test drive and lift"};
+let lastPdf = null;
+function buildPdf(items){
+  const W = 595, H = 842, M = 42;
+  const esc = t => String(t).replace(/[^\x20-\x7E]/g, "?").replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)");
+  const pages = [[]]; let y = H - M;
+  items.forEach(it => {
+    const sz = it.sz || 10, lh = sz + (sz <= 10 ? 4 : 5) + (it.gap || 0), x0 = it.a ? M + 64 : M;
+    const maxc = Math.max(10, Math.floor((W - M - x0) / (sz * 0.55)));
+    const ls = []; let cur = "";
+    String(it.t).split(/\s+/).forEach(w => { if((cur + " " + w).trim().length > maxc){ ls.push(cur); cur = w; } else cur = (cur + " " + w).trim(); });
+    ls.push(cur);
+    ls.forEach((l, i) => {
+      if(y - lh < M + 10){ pages.push([]); y = H - M; }
+      pages[pages.length - 1].push({l, a: i === 0 ? it.a : "", x0, y: y - sz, sz, b: it.b, c: it.c || [0,0,0], ac: it.ac || it.c || [0,0,0]});
+      y -= lh;
+    });
+  });
+  let out = "%PDF-1.4\n"; const offs = [];
+  const add = s => { offs.push(out.length); out += s; };
+  add("1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n");
+  add("2 0 obj\n<< /Type /Pages /Kids [" + pages.map((_, i) => (5 + 2*i) + " 0 R").join(" ") + "] /Count " + pages.length + " >>\nendobj\n");
+  add("3 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n");
+  add("4 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>\nendobj\n");
+  const col = c => c.map(n => n.toFixed(2)).join(" ") + " rg ";
+  pages.forEach((ops, i) => {
+    let st = "";
+    ops.forEach(o => {
+      if(o.a) st += "BT /F2 " + o.sz + " Tf " + col(o.ac) + M + " " + o.y.toFixed(1) + " Td (" + esc(o.a) + ") Tj ET\n";
+      if(o.l) st += "BT /" + (o.b ? "F2" : "F1") + " " + o.sz + " Tf " + col(o.c) + o.x0 + " " + o.y.toFixed(1) + " Td (" + esc(o.l) + ") Tj ET\n";
+    });
+    st += "BT /F1 8 Tf 0.4 0.4 0.4 rg " + (W/2 - 20) + " 22 Td (Page " + (i+1) + " of " + pages.length + ") Tj ET\n";
+    add((5 + 2*i) + " 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 " + W + " " + H + "] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents " + (6 + 2*i) + " 0 R >>\nendobj\n");
+    add((6 + 2*i) + " 0 obj\n<< /Length " + st.length + " >>\nstream\n" + st + "endstream\nendobj\n");
+  });
+  const n = offs.length, xr = out.length;
+  out += "xref\n0 " + (n + 1) + "\n0000000000 65535 f \n" + offs.map(o => String(o).padStart(10, "0") + " 00000 n \n").join("") + "trailer\n<< /Size " + (n + 1) + " /Root 1 0 R >>\nstartxref\n" + xr + "\n%%EOF";
+  const bytes = new Uint8Array(out.length);
+  for(let i = 0; i < out.length; i++) bytes[i] = out.charCodeAt(i) & 255;
+  return bytes;
+}
+function makePdf(meta){
+  const red = [0.78,0.16,0.16], green = [0.04,0.48,0.24], grey = [0.35,0.35,0.35];
+  const items = [
+    {t:"FORKLIFT PRE-START CHECK", b:true, sz:18, gap:4},
+    {t:"Toyota " + MODELS[meta.model][0] + " (electric " + MODELS[meta.model][2].toLowerCase() + ")", sz:11},
+    {t:"Forklift no: " + (meta.forklift || "-"), sz:11},
+    {t:"Operator: " + (meta.operator || "-"), sz:11},
+    {t:"Hour meter: " + (meta.hours || "-"), sz:11},
+    {t:"Date/time: " + meta.when, sz:11, gap:4},
+    {t: meta.result === "pass" ? "RESULT: PASSED - no defects reported" : "RESULT: DEFECTS FOUND - DO NOT OPERATE", b:true, sz:13, c: meta.result === "pass" ? green : red, gap:6}
+  ];
+  if(meta.defects.length) items.push({t:"Defects: " + meta.defects.join("; "), sz:10, c:red});
+  if(meta.notes) items.push({t:"Comments: " + meta.notes, sz:10});
+  Object.entries(SECTIONS).forEach(([sid, list]) => {
+    items.push({t:SECTION_TITLES[sid], b:true, sz:11, gap:6});
+    list.forEach(([name], i) => {
+      const k = sid + "_" + i; if(!isVisible(k)) return;
+      const v = state[k];
+      items.push({a: v === "ok" ? "OK" : v === "bad" ? "DEFECT" : "N/A", ac: v === "ok" ? green : v === "bad" ? red : grey, t:name, sz:10, b: v === "bad", c: v === "bad" ? red : [0,0,0]});
+    });
+  });
+  items.push({t:"Completed on the operator's phone. This record is not stored online.", sz:8, c:grey, gap:8});
+  const d = new Date(), pad = n => String(n).padStart(2, "0");
+  const name = "Prestart_" + MODELS[meta.model][0] + (meta.forklift ? "_FL" + meta.forklift.replace(/[^A-Za-z0-9]/g, "") : "") + "_" + d.getFullYear() + pad(d.getMonth()+1) + pad(d.getDate()) + "_" + pad(d.getHours()) + pad(d.getMinutes()) + ".pdf";
+  return {name, blob: new Blob([buildPdf(items)], {type:"application/pdf"})};
+}
+$("savepdf").onclick = () => {
+  if(!lastPdf) return;
+  const a = document.createElement("a"); a.href = URL.createObjectURL(lastPdf.blob); a.download = lastPdf.name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 15000);
+  $("copymsg").textContent = "PDF saved to your phone: " + lastPdf.name;
+};
+$("sharepdf").onclick = async () => {
+  if(!lastPdf) return;
+  try{
+    const f = new File([lastPdf.blob], lastPdf.name, {type:"application/pdf"});
+    await navigator.share({files:[f], title:"Forklift pre-start check"});
+  }catch(e){ if(e && e.name !== "AbortError") $("copymsg").textContent = "Couldn't open the share menu. Use Save as PDF instead."; }
+};
+$("newcheck").onclick = () => { try{ sessionStorage.removeItem("prestart"); }catch(e){} location.reload(); };
+try{
+  const probe = new File([new Blob(["x"])], "a.pdf", {type:"application/pdf"});
+  if(navigator.canShare && navigator.canShare({files:[probe]})) $("sharepdf").style.display = "block";
+}catch(e){}
+$("finish").onclick = finish;
+$("back").onclick = () => { $("result").style.display="none"; $("form").style.display="block"; $("bar").style.display="flex"; };
+$("copy").onclick = async () => {
+  try{ await navigator.clipboard.writeText($("report").textContent); $("copymsg").textContent = "Copied."; }
+  catch(e){ $("copymsg").textContent = "Couldn't copy. Press and hold the text above to select it."; }
+};
+["fl","op","hrs","notes"].forEach(id => $(id).addEventListener("input", save));
+window.addEventListener("hashchange", fromHash);
+buildModels(); build(); applyModel(); load(); fromHash(); stamp();
+</script>
+</body>
+</html>
